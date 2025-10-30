@@ -1,5 +1,5 @@
 """
-Configuration file for the Music Map project.
+Configuration file for the Video Generation Map project.
 Store API keys and credentials in a .env file.
 """
 
@@ -21,15 +21,19 @@ USER_DIR = PROJECT_ROOT / "user"
 DATA_DIR.mkdir(exist_ok=True)
 MODELS_DIR.mkdir(exist_ok=True)
 
-# Spotify API credentials
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
-SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI", "http://localhost:8888/callback")
+# Supabase credentials
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-# MERT model configuration
-MERT_MODEL_NAME = "m-a-p/MERT-v1-330M"
-MERT_SAMPLE_RATE = 24000
-EMBEDDING_DIM = 768
+# CLIP model configuration (for image + text embeddings)
+CLIP_MODEL_NAME = "openai/clip-vit-large-patch14"  # 768-dim embeddings
+# Alternative: "openai/clip-vit-base-patch32" for faster, 512-dim
+
+# Embedding configuration
+IMAGE_EMBEDDING_DIM = 768  # CLIP image embedding
+TEXT_EMBEDDING_DIM = 768   # CLIP text embedding
+EMBEDDING_DIM = 768        # Combined embedding dimension (averaged or concatenated)
+COMBINE_METHOD = "average" # "average" or "concat" (concat = 1536-dim)
 
 # UMAP configuration
 UMAP_N_NEIGHBORS = 15
@@ -41,58 +45,43 @@ UMAP_MODEL_PATH = MODELS_DIR / "umap_model.pkl"
 
 # Database configuration
 DATABASE_PATH = DATA_DIR / "embeddings.db"
-BASE_SONGS_PATH = DATA_DIR / "base_songs.json"
+BASE_GENERATIONS_PATH = DATA_DIR / "base_generations.json"
 EMBEDDINGS_CACHE_DIR = DATA_DIR / "embeddings_cache"
 EMBEDDINGS_CACHE_DIR.mkdir(exist_ok=True)
+IMAGES_CACHE_DIR = DATA_DIR / "images_cache"
+IMAGES_CACHE_DIR.mkdir(exist_ok=True)
 
-# Song collection targets
-TARGET_TOTAL_SONGS = 100000
-TARGET_GLOBAL_TOP = 10000
-TARGET_GENRE_DIVERSITY = 70000
-TARGET_GEOGRAPHIC_DIVERSITY = 10000
-TARGET_RECENT_RELEASES = 10000
+# Generation collection targets
+TARGET_TOTAL_GENERATIONS = 100000  # 50K-100K+ generations
+TARGET_PER_CATEGORY = 25000        # ~25K per category
 
-# Spotify genres (125 genre seeds)
-SPOTIFY_GENRES = [
-    "acoustic", "afrobeat", "alt-rock", "alternative", "ambient", "anime",
-    "black-metal", "bluegrass", "blues", "bossanova", "brazil", "breakbeat",
-    "british", "cantopop", "chicago-house", "children", "chill", "classical",
-    "club", "comedy", "country", "dance", "dancehall", "death-metal", "deep-house",
-    "detroit-techno", "disco", "disney", "drum-and-bass", "dub", "dubstep",
-    "edm", "electro", "electronic", "emo", "folk", "forro", "french", "funk",
-    "garage", "german", "gospel", "goth", "grindcore", "groove", "grunge",
-    "guitar", "happy", "hard-rock", "hardcore", "hardstyle", "heavy-metal",
-    "hip-hop", "holidays", "honky-tonk", "house", "idm", "indian", "indie",
-    "indie-pop", "industrial", "iranian", "j-dance", "j-idol", "j-pop", "j-rock",
-    "jazz", "k-pop", "kids", "latin", "latino", "malay", "mandopop", "metal",
-    "metal-misc", "metalcore", "minimal-techno", "movies", "mpb", "new-age",
-    "new-release", "opera", "pagode", "party", "philippines-opm", "piano",
-    "pop", "pop-film", "post-dubstep", "power-pop", "progressive-house",
-    "psych-rock", "punk", "punk-rock", "r-n-b", "rainy-day", "reggae",
-    "reggaeton", "road-trip", "rock", "rock-n-roll", "rockabilly", "romance",
-    "sad", "salsa", "samba", "sertanejo", "show-tunes", "singer-songwriter",
-    "ska", "sleep", "songwriter", "soul", "soundtracks", "spanish", "study",
-    "summer", "swedish", "synth-pop", "tango", "techno", "trance", "trip-hop",
-    "turkish", "work-out", "world-music"
+# Video generation categories
+CONTENT_CATEGORIES = [
+    "fantasy",
+    "realistic",
+    "cinematic",
+    "animation"
 ]
 
-# Geographic markets for diversity
-GEOGRAPHIC_MARKETS = [
-    "US", "GB", "BR", "IN", "KR", "JP", "MX", "DE", "FR", "IT",
-    "ES", "CA", "AU", "NL", "SE", "NO", "PL", "AR", "CL", "CO"
-]
+# Supabase table configuration
+SUPABASE_TABLE_NAME = "generations"  # Default table name, can be overridden
+SUPABASE_IMAGE_COLUMN = "image_url"  # Column containing image URL/path
+SUPABASE_PROMPT_COLUMN = "prompt"    # Column containing prompt text
+SUPABASE_CATEGORY_COLUMN = "category"  # Column containing category
+SUPABASE_ID_COLUMN = "id"            # Primary key column
+SUPABASE_USER_COLUMN = "user_id"     # User ID column (optional)
+SUPABASE_TIMESTAMP_COLUMN = "created_at"  # Timestamp column (optional)
 
 # Processing configuration
 BATCH_SIZE = 32  # For embedding generation
-CHECKPOINT_INTERVAL = 1000  # Save progress every N songs
-MAX_RETRIES = 3  # For API calls
-TIMEOUT = 30  # Seconds for API requests
+CHECKPOINT_INTERVAL = 1000  # Save progress every N generations
+MAX_RETRIES = 3  # For database/API calls
+TIMEOUT = 30  # Seconds for requests
 
-# Audio processing
-AUDIO_DURATION = 30  # seconds
-AUDIO_CACHE_DIR = DATA_DIR / "audio_cache"
-AUDIO_CACHE_DIR.mkdir(exist_ok=True)
-KEEP_AUDIO_CACHE = False  # Delete audio files after processing to save space
+# Image processing
+IMAGE_MAX_SIZE = (512, 512)  # Resize images for faster processing
+KEEP_IMAGE_CACHE = False  # Delete downloaded images after processing to save space
+IMAGE_FORMATS = [".jpg", ".jpeg", ".png", ".webp"]  # Supported formats
 
 # Visualization configuration
 VIZ_OUTPUT_DIR = DATA_DIR / "visualizations"
@@ -101,6 +90,15 @@ VIZ_DPI = 300
 VIZ_FIGSIZE = (12, 10)
 VIZ_CMAP = "viridis"  # Color map for temporal gradient
 
+# Visualization configuration - Category colors
+CATEGORY_COLORS = {
+    "fantasy": "#9B59B6",      # Purple
+    "realistic": "#3498DB",    # Blue
+    "cinematic": "#E74C3C",    # Red
+    "animation": "#2ECC71",    # Green
+    "unknown": "#95A5A6"       # Gray
+}
+
 # Logging
 LOG_LEVEL = "INFO"
-LOG_FILE = DATA_DIR / "music_map.log"
+LOG_FILE = DATA_DIR / "video_map.log"

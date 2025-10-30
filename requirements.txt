@@ -1,11 +1,10 @@
 # Core dependencies
 torch>=2.0.0
-torchaudio>=2.0.0
 transformers>=4.30.0
-librosa>=0.10.0
+Pillow>=10.0.0
 numpy>=1.24.0
 umap-learn>=0.5.3
-spotipy>=2.23.0
+supabase>=2.0.0
 requests>=2.31.0
 matplotlib>=3.7.0
 plotly>=5.14.0
